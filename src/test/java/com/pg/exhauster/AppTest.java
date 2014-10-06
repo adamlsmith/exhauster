@@ -1,11 +1,14 @@
 package com.pg.exhauster;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.junit.Test;
+import org.junit.Ignore;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
+import junit.framework.*;
 
 /**
- * Unit test for simple App.
+ * Unit test for Exhauster App.
  */
 public class AppTest 
     extends TestCase
@@ -20,19 +23,27 @@ public class AppTest
         super( testName );
     }
 
-    /**
-     * @return the suite of tests being tested
-     */
-    public static Test suite()
-    {
-        return new TestSuite( AppTest.class );
+    @Test
+    public void testGetMemoryUsage(){
+	    App a = new App();
+	    String t = a.getMemoryUsage(0.5f);
+	    Assert.assertNotNull(t);
+	    Assert.assertTrue(t.startsWith("Heap"));
     }
 
-    /**
-     * Rigourous Test :-)
-     */
-    public void testApp()
-    {
-        assertTrue( true );
+    @Test
+    public void testGetUsed(){
+	App a = new App();
+	float f = a.getUsed();
+	Assert.assertTrue(f > 0);
     }
+
+    @Test
+    public void testGetCommitted(){
+	App a = new App();
+	float f = a.getCommitted();
+	Assert.assertTrue(f > 0);
+    }
+
+
 }
