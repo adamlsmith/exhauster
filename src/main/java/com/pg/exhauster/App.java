@@ -14,10 +14,12 @@ public class App
 	private int  availableProcessors = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
 	private long lastSystemTime      = 0;
 	private long lastProcessCpuTime  = 0;
-	private static Vector<CpuEater> threads = new Vector();
+	private static Vector<CpuEater> threads = new Vector<CpuEater>();
 
 	public static void main(String[] args)
 	{
+		App a = new App();
+
 		if(args.length == 0)
 		{
 			System.out.println("USAGE:\nPlease pass either file, cpu or mem as an argument.  For memory, followed by a decimal percentage cap\nExample:\nTO FILL 95% of the heap:  java -jar <this jar> mem 0.995\n");
@@ -26,7 +28,6 @@ public class App
 			System.out.println(Runtime.getRuntime().availableProcessors() + " processors found");
 		
 		if(args[0].equalsIgnoreCase("cpu")){
-			App a = new App();
 			while(true){
 				double f = a.getCpuUsage();
 				System.out.println("CPU Usage: " + (100*f) + "%");
@@ -38,35 +39,17 @@ public class App
 
 
 		if(args[0].equalsIgnoreCase("mem")){
-			//get OS info
-			com.sun.management.OperatingSystemMXBean bean =
-			 (com.sun.management.OperatingSystemMXBean)
-			  java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-			  long max = bean.getTotalPhysicalMemorySize();
-			//get jvm args
-			  RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-			  List<String> arguments = runtimeMxBean.getInputArguments();
-			  if(arguments.size() == 0){
+			  if(a.getJVMArgs().size() == 0){
 				  System.out.println("No JVM arguments specified, exiting");
 				  System.out.println("Please specify a heap size and increment which are the same, i.e. java -Xmx5120m -Xms5120m");
 				  System.exit(0);
 			  }
 
-
-			//get JVM mem info
-			MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
-			Runtime rt = Runtime.getRuntime();
 			float cap = Float.parseFloat(args[1]);
-			System.out.println("Exhausting memory to cap " + cap + ", max memory available to JVM is " + rt.maxMemory() + 
-					", freeMemory is " + rt.freeMemory() );
 
 			//create an object to build up memory allocation for
-			Vector v = new Vector();
+			Vector<byte[]> v = new Vector<byte[]>();
 
-			//figure out the maximum memory to allocate
-			MemoryUsage mu = mbean.getHeapMemoryUsage();
-			float maxToAllocate = mu.getMax()*cap;
-			System.out.println("Max to allocate is = " + (maxToAllocate/1024/1024) + "mb");
 			
 			//loop forever
 			while(true)
@@ -74,18 +57,10 @@ public class App
 				//garbage collect
 				System.gc();
 				//print memory stats to stdout
-				mu = mbean.getHeapMemoryUsage();
-				System.out.println( "Heap usage: " + (mu.getUsed()/1024/1024) + "mb, "
-					+ "Free memory: "  + (rt.freeMemory()/1024/1024)+"mb, max heap: " 
-					+ (mu.getMax()/1024/1024)+"mb, "
-					+ " max committed: " + (mu.getCommitted()/1024/1024) + "mb, "
-					+ ((100 * mu.getUsed())/mu.getCommitted()) + "% of committed, "
-					+ ((100 * mu.getUsed())/max) + "% of physical");
-
+				System.out.println(a.getMemoryUsage(cap));
 				//if less than cap % of heap is allocated, add more data to memory
-				if (mu.getUsed() <= (mu.getCommitted()*cap))
+				if (a.getUsed() <= (a.getCommitted()*cap))
 				{
-				    
 				    //add 1mb to the object
 				    byte b[] = new byte[1048576];
 				    v.add(b);
@@ -111,6 +86,49 @@ public class App
 			System.exit(0);
 
 		}
+	}
+
+	protected float getUsed(){
+		MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+		MemoryUsage mu = mbean.getHeapMemoryUsage();
+		return mu.getUsed();
+	}
+
+	protected float getCommitted(){
+		MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+		MemoryUsage mu = mbean.getHeapMemoryUsage();
+		return mu.getCommitted();
+	}
+
+	protected String getMemoryUsage(float cap)
+	{
+		MemoryMXBean mbean = ManagementFactory.getMemoryMXBean();
+		Runtime rt = Runtime.getRuntime();
+		MemoryUsage mu = mbean.getHeapMemoryUsage();
+		//figure out the maximum memory to allocate
+		String ret = ( "Heap usage: " + (mu.getUsed()/1024/1024) + "mb, "
+			+ "Free memory: "  + (rt.freeMemory()/1024/1024)+"mb, max heap: " 
+			+ (mu.getMax()/1024/1024)+"mb, "
+			+ " max committed: " + (mu.getCommitted()/1024/1024) + "mb, "
+			+ ((100 * mu.getUsed())/mu.getCommitted()) + "% of committed, "
+			+ ((100 * mu.getUsed())/getPhysicalMemory()) + "% of physical");
+		return ret;
+	}
+
+
+	protected List<String> getJVMArgs(){
+			//get jvm args
+			  RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
+			  return runtimeMxBean.getInputArguments();
+	}
+
+
+	protected long getPhysicalMemory(){
+			//get OS info
+			com.sun.management.OperatingSystemMXBean bean =
+			 (com.sun.management.OperatingSystemMXBean)
+			  java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+			  return bean.getTotalPhysicalMemorySize();
 	}
 
 	public synchronized double getCpuUsage()
@@ -148,7 +166,6 @@ public class App
 	}
 }
 class CpuEater implements Runnable {
-	private static int ins = 1;
 	public void run(){
 		while(true){
 
