@@ -36,6 +36,7 @@ public class AppTest
 	App a = new App();
 	float f = a.getUsed();
 	Assert.assertTrue(f > 0);
+	Assert.assertNotNull(f);
     }
 
     @Test

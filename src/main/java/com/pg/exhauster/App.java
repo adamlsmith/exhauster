@@ -145,10 +145,8 @@ public class App
 		{
 			processCpuTime = ( (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean() ).getProcessCpuTime();
 		}
-		//System.out.println("processCpuTime="+processCpuTime+", lastProcessCpuTime="+lastProcessCpuTime+", systemTime="+systemTime+", lastSystemTime="+lastSystemTime);
 
 		double cpuUsage = (double) ( processCpuTime - lastProcessCpuTime ) / ( systemTime - lastSystemTime );
-		//System.out.println("Returning: " + (cpuUsage / availableProcessors));
 
 		lastSystemTime     = systemTime;
 		lastProcessCpuTime = processCpuTime;
